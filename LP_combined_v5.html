@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Concentrated Liquidity Position Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+
+<style>
+:root{
+  --bg:#0b0f1a;
+  --card:#12172a;
+  --card2:#0d1327;
+  --border:#28304c;
+  --accent:#7c7cff;
+  --accent2:#2dd4bf;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --subtle:#64748b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  padding:24px;
+  background:
+    radial-gradient(900px 480px at 18% -14%,rgba(55,72,169,.55),transparent),
+    radial-gradient(900px 520px at 90% 2%,rgba(20,109,102,.45),transparent),
+    var(--bg);
+  color:var(--text);
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+}
+.container{
+  max-width:1300px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px 20px;
+}
+.hero{grid-column:1/-1;margin:6px 0 8px}
+h1{margin:0;font-size:26px;letter-spacing:0;line-height:1.2}
+.card{
+  background:linear-gradient(180deg,rgba(21,26,51,.96),rgba(13,18,38,.98));
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:22px;
+  box-shadow:0 18px 42px rgba(0,0,0,.28);
+}
+.inputs,.chart-card{min-height:560px}
+.inputs .row{display:flex;gap:14px;margin-bottom:16px}
+.field{flex:1;display:flex;flex-direction:column}
+label{font-size:12px;color:#aeb8ca;margin-bottom:7px;font-weight:650}
+input{
+  width:100%;
+  min-height:48px;
+  padding:11px 13px;
+  border-radius:8px;
+  border:1px solid #2b3453;
+  background:#0b1024;
+  color:var(--text);
+  font-size:16px;
+  outline:none;
+  transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
+}
+input:focus{
+  border-color:rgba(45,212,191,.8);
+  box-shadow:0 0 0 3px rgba(45,212,191,.12);
+  background:#0a1026;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+input[type=number]{-moz-appearance:textfield}
+.small{max-width:210px}
+.controls{display:flex;align-items:center;gap:12px;margin-top:10px}
+button{
+  border:none;
+  min-height:46px;
+  padding:12px 20px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+  font-size:15px;
+}
+.primary{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  color:#020617;
+  min-width:148px;
+  box-shadow:0 12px 28px rgba(45,212,191,.18);
+}
+.ghost{
+  background:transparent;
+  border:1px solid #2b3453;
+  color:var(--text);
+  min-height:40px;
+  padding:9px 16px;
+  font-size:14px;
+}
+.results{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:10px;
+  background:rgba(7,12,29,.82);
+  border:1px solid rgba(43,52,83,.72);
+}
+.row-kv{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  padding:9px 0;
+  border-bottom:1px dashed #1f2440;
+  font-size:15px;
+}
+.row-kv:last-child{border-bottom:none}
+.row-kv div:last-child{font-weight:700;text-align:right}
+.chart-card{height:560px}
+.chart-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:12px;
+}
+.chart-title{font-size:15px;font-weight:750;color:#f3f4f6}
+.status-badge{
+  min-width:96px;
+  padding:7px 10px;
+  border-radius:999px;
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+  color:#dffdf7;
+  background:rgba(45,212,191,.12);
+  border:1px solid rgba(45,212,191,.45);
+}
+.status-below,.status-above{
+  color:#fff2c7;
+  background:rgba(251,191,36,.12);
+  border-color:rgba(251,191,36,.45);
+}
+.chart-wrap{height:calc(100% - 34px)}
+.analysis{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.metric{
+  background:linear-gradient(180deg,rgba(16,23,47,.95),rgba(9,14,31,.98));
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+  box-shadow:0 14px 32px rgba(0,0,0,.2);
+}
+.metric-label{
+  color:#aeb8ca;
+  font-size:12px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+.metric-value{
+  font-size:22px;
+  font-weight:800;
+  line-height:1.15;
+}
+.metric-detail{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.45}
+.bound-values{display:flex;flex-direction:column;gap:10px}
+.bound-row{display:flex;justify-content:space-between;gap:12px;color:#aeb8ca;font-size:13px}
+.bound-row strong{color:#f8fafc;font-size:15px;text-align:right}
+
+@media(max-width:900px){
+  .container{grid-template-columns:1fr}
+  .inputs,.chart-card{min-height:auto}
+  .chart-card{height:460px}
+  .analysis{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  body{padding:16px}
+  .inputs .row{flex-direction:column}
+  .small{max-width:none}
+  .analysis{grid-template-columns:1fr}
+  .metric{min-height:112px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="hero">
+    <h1>Concentrated Liquidity Position Calculator</h1>
+  </div>
+
+  <div class="card inputs">
+    <div class="row">
+      <div class="field small"><label>Total Investment</label><input id="totalUSDC" type="number" value="1000"/></div>
+      <div class="field small">
+        <label>Token1 Symbol</label>
+        <input id="token0Name" type="text" value="SOL"/>
+      </div>
+      <div class="field small">
+        <label>Token2 Symbol</label>
+        <input id="token2Name" type="text" value="USDC"/>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label>Lower Price Bound</label><input id="lowerPrice" type="number" value="100"/></div>
+      <div class="field"><label>Upper Price Bound</label><input id="upperPrice" type="number" value="200"/></div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label>Current Price</label><input id="currentPrice" type="number" value="150"/></div>
+      <div class="field small"><label>Price Scale</label><input id="scaleFactor" type="number" value="1.1" step="0.1"/></div>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="calcBtn">Calculate</button>
+      <button class="ghost" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="row-kv"><div>Liquidity (L)</div><div id="liquidityVal"></div></div>
+      <div class="row-kv"><div id="tokenLabel"></div><div id="token0Val"></div></div>
+      <div class="row-kv"><div id="token2Label"></div><div id="token1Val"></div></div>
+      <div class="row-kv"><div>Position Value</div><div id="positionValue"></div></div>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="chart-top">
+      <div class="chart-title">Position Composition</div>
+      <div class="status-badge" id="chartStatus">In Range</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="liquidityChart"></canvas>
+    </div>
+  </div>
+
+  <section class="analysis">
+    <div class="metric">
+      <div class="metric-label">Token Allocation</div>
+      <div class="metric-value" id="allocationValue"></div>
+      <div class="metric-detail" id="allocationDetail"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Distance To Bounds</div>
+      <div class="metric-value" id="distanceValue"></div>
+      <div class="metric-detail" id="distanceDetail"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Range Width</div>
+      <div class="metric-value" id="rangeWidth"></div>
+      <div class="metric-detail" id="rangeWidthDetail"></div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Position Value At</div>
+      <div class="bound-values">
+        <div class="bound-row"><span>Lower Range</span><strong id="lowerRangeValue"></strong></div>
+        <div class="bound-row"><span>Upper Range</span><strong id="upperRangeValue"></strong></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+function safeSqrt(x){return x>0?Math.sqrt(x):0}
+function fmt(x,d=2){return Number.isFinite(x)?x.toFixed(d):"--"}
+
+function calculateLiquidity(V,P,Pa,Pb){
+  const sp=safeSqrt(P), sa=safeSqrt(Pa), sb=safeSqrt(Pb);
+  if(P<=Pa) return V/(P*(1/sa-1/sb));
+  if(P>=Pb) return V/(sb-sa);
+  return V/(2*sp-P/sb-sa);
+}
+
+function amounts(L,Pa,Pb,p){
+  const sp=safeSqrt(p), sa=safeSqrt(Pa), sb=safeSqrt(Pb);
+  if(p<=Pa) return [L*(1/sa-1/sb),0];
+  if(p>=Pb) return [0,L*(sb-sa)];
+  return [L*(1/sp-1/sb),L*(sp-sa)];
+}
+
+let chart;
+
+const rangeMarkerPlugin={
+  id:"rangeMarkerPlugin",
+  beforeDatasetsDraw(chart,args,opts){
+    const {ctx,chartArea,scales}=chart;
+    if(!opts||!scales.x) return;
+    const left=scales.x.getPixelForValue(opts.lower);
+    const right=scales.x.getPixelForValue(opts.upper);
+    ctx.save();
+    ctx.fillStyle="rgba(45,212,191,.06)";
+    ctx.fillRect(left,chartArea.top,Math.max(0,right-left),chartArea.bottom-chartArea.top);
+    ctx.restore();
+  },
+  afterDatasetsDraw(chart,args,opts){
+    const {ctx,chartArea,scales}=chart;
+    if(!opts||!scales.x) return;
+
+    function line(value,label,color,dash=[]){
+      const x=scales.x.getPixelForValue(value);
+      if(!Number.isFinite(x)||x<chartArea.left||x>chartArea.right) return;
+      ctx.save();
+      ctx.strokeStyle=color;
+      ctx.lineWidth=1;
+      ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.moveTo(x,chartArea.top);
+      ctx.lineTo(x,chartArea.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=color;
+      ctx.font="700 11px Inter, system-ui, sans-serif";
+      ctx.textAlign=x>chartArea.right-70?"right":"left";
+      ctx.fillText(label,x+(x>chartArea.right-70?-6:6),chartArea.top+14);
+      ctx.restore();
+    }
+
+    line(opts.lower,"Lower","rgba(148,163,184,.72)",[4,5]);
+    line(opts.upper,"Upper","rgba(148,163,184,.72)",[4,5]);
+    line(opts.current,"Current","#f8fafc");
+  }
+};
+
+Chart.register(rangeMarkerPlugin);
+
+function drawChart(points0,points1,token1,token2,minX,maxX,Pa,Pb,P){
+  if(chart) chart.destroy();
+  chart=new Chart(document.getElementById("liquidityChart"),{
+    type:"line",
+    data:{
+      datasets:[
+        {
+          label:token1,
+          data:points0,
+          borderColor:"#7c7cff",
+          backgroundColor:"rgba(124,124,255,.25)",
+          pointRadius:0,
+          borderWidth:4,
+          tension:.12,
+          fill:true,
+          parsing:false,
+          yAxisID:"y1"
+        },
+        {
+          label:token2,
+          data:points1,
+          borderColor:"#2dd4bf",
+          backgroundColor:"rgba(45,212,191,.25)",
+          pointRadius:0,
+          borderWidth:4,
+          tension:.12,
+          fill:true,
+          parsing:false,
+          yAxisID:"y2"
+        }
+      ]
+    },
+    options:{
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        rangeMarkerPlugin:{lower:Pa,upper:Pb,current:P},
+        tooltip:{
+          callbacks:{
+            title:i=>"Price: "+i[0].parsed.x.toFixed(2)+" "+token2,
+            label:c=>c.dataset.label+": "+c.parsed.y.toFixed(2),
+            footer:i=>"Value: "+(i[0].parsed.y*i[0].parsed.x+i[1].parsed.y).toFixed(2)+" "+token2
+          }
+        },
+        legend:{labels:{color:"#e5e7eb",boxWidth:34,boxHeight:4,usePointStyle:false}}
+      },
+      scales:{
+        x:{
+          type:"logarithmic",
+          min:minX,
+          max:maxX,
+          title:{display:true,text:"Price ("+token2+")",color:"#e5e7eb"},
+          ticks:{color:"#9ca3af"},
+          grid:{color:"rgba(148,163,184,.08)"}
+        },
+        y1:{
+          title:{display:true,text:token1,color:"#e5e7eb"},
+          ticks:{color:"#9ca3af"},
+          grid:{color:"rgba(148,163,184,.08)"}
+        },
+        y2:{
+          position:"right",
+          title:{display:true,text:token2,color:"#e5e7eb"},
+          ticks:{color:"#9ca3af"},
+          grid:{drawOnChartArea:false}
+        }
+      },
+      maintainAspectRatio:false
+    }
+  });
+}
+
+function calc(){
+  const V=+totalUSDC.value;
+  const Pa=+lowerPrice.value;
+  const Pb=+upperPrice.value;
+  const P=+currentPrice.value;
+  const token1=token0Name.value||"TOKEN1";
+  const token2=token2Name.value||"USDC";
+  const dec=2;
+
+  const L=calculateLiquidity(V,P,Pa,Pb);
+  const cur=amounts(L,Pa,Pb,P);
+  const lower=amounts(L,Pa,Pb,Pa);
+  const upper=amounts(L,Pa,Pb,Pb);
+  const curToken1Value=cur[0]*P;
+  const curToken2Value=cur[1];
+  const totalValue=curToken1Value+curToken2Value;
+  const token1Pct=totalValue?curToken1Value/totalValue*100:0;
+  const token2Pct=totalValue?curToken2Value/totalValue*100:0;
+  const status=P<Pa?"Below Range":P>Pb?"Above Range":"In Range";
+  const statusClass=P<Pa?"status-below":P>Pb?"status-above":"";
+
+  results.style.display="block";
+  liquidityVal.textContent=L.toFixed(4);
+  tokenLabel.textContent=token1;
+  token2Label.textContent=token2;
+  token0Val.textContent=cur[0].toFixed(dec);
+  token1Val.textContent=cur[1].toFixed(2);
+  positionValue.textContent=fmt(totalValue)+" "+token2;
+
+  chartStatus.textContent=status;
+  chartStatus.className="status-badge "+statusClass;
+  allocationValue.textContent=fmt(token1Pct,0)+"% / "+fmt(token2Pct,0)+"%";
+  allocationDetail.textContent=token1+" value: "+fmt(curToken1Value)+" "+token2+" · "+token2+" value: "+fmt(curToken2Value)+" "+token2;
+  distanceValue.textContent=fmt(Math.abs(P-Pa)/P*100,1)+"% / "+fmt(Math.abs(Pb-P)/P*100,1)+"%";
+  distanceDetail.textContent="To lower / upper from current price";
+  rangeWidth.textContent=fmt((Pb/Pa-1)*100,1)+"%";
+  rangeWidthDetail.textContent="Lower "+fmt(Pa)+" "+token2+" · Upper "+fmt(Pb)+" "+token2;
+  lowerRangeValue.textContent=fmt(lower[0]*Pa+lower[1])+" "+token2;
+  upperRangeValue.textContent=fmt(upper[0]*Pb+upper[1])+" "+token2;
+
+  const scale=+scaleFactor.value||1.1;
+  const minX=Pa/scale;
+  const maxX=Pb*scale;
+
+  const pts0=[], pts1=[];
+  for(let i=0;i<420;i++){
+    const p=minX*Math.exp(Math.log(maxX/minX)*i/419);
+    const a=amounts(L,Pa,Pb,p);
+    pts0.push({x:p,y:a[0]});
+    pts1.push({x:p,y:a[1]});
+  }
+  drawChart(pts0,pts1,token1,token2,minX,maxX,Pa,Pb,P);
+}
+
+calcBtn.onclick=calc;
+resetBtn.onclick=()=>location.reload();
+calc();
+</script>
+</body>
+</html>
