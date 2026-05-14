@@ -62,6 +62,10 @@ https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js
 
 Because Chart.js is loaded from a CDN, the chart requires an internet connection unless the dependency is bundled locally.
 
+## Third-Party Libraries
+
+This project uses Chart.js, which is licensed under the MIT License. Chart.js copyright belongs to the Chart.js contributors.
+
 ## Disclaimer
 
 This calculator is for educational and estimation purposes only. It does not account for fees, slippage, impermanent loss, gas costs, or protocol-specific implementation details.
