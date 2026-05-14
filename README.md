@@ -52,6 +52,14 @@ A single-page calculator for visualizing a concentrated liquidity position. Ente
 - Inside the range, the position holds a mix of Token1 and Token2.
 - Above the upper range, the position is fully in Token2.
 
+## Price Scale
+
+`Price Scale` controls how much extra price area is shown on the chart outside the lower and upper range.
+
+The default value is `1.1`, which shows a little space below the lower range and above the upper range. If the current price is far below the lower range or far above the upper range, it may sit outside the visible chart area or appear too close to the edge.
+
+When that happens, increase `Price Scale` until the current price, lower range, and upper range are all clearly visible on the chart. For example, a value like `2` shows a wider price area than `1.1`.
+
 ## Technical Notes
 
 This is a standalone HTML file using vanilla JavaScript and Chart.js from a CDN:
